@@ -1,0 +1,73 @@
+version: "3.4"
+
+services:
+  mariadb:
+    image: mariadb:10.5.2
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+    ports:
+      - '3306:3306'
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.0.2
+    depends_on:
+      - mariadb
+    environment:
+      - PMA_HOST
+      - PMA_USER
+      - PMA_PASSWORD
+    restart: always
+#    ports:
+#      - '8000:80'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.local`)"
+
+  maildev:
+    image: maildev/maildev:1.1.0
+    ports:
+      - '1080:1080'
+      - '1025:1025'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.maildev.rule=Host(`maildev.local`)"
+
+  node:
+    build: ./docker/node
+    tty: true
+
+    volumes:
+      - ./packages/vuejs:/var/www
+
+  php-fpm:
+    build: ./docker/php-fpm
+    volumes:
+      - ./packages/symfony:/var/www
+
+  nginx:
+    build: ./docker/nginx
+    volumes:
+      - ./packages/symfony:/var/www
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx.rule=Host(`api.symfony.local`)"
+
+#  traefik:
+#    image: traefik:v2.1
+#    command:
+#      - --api.insecure=true
+#      - --providers.docker
+#      - --providers.docker.exposedByDefault=false
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    ports:
+#      - "80:80"
+#      - '8080:8080'
+
+volumes:
+  mysql_data:
