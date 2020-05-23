@@ -22,8 +22,6 @@ services:
       - PMA_USER
       - PMA_PASSWORD
     restart: always
-#    ports:
-#      - '8000:80'
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.local`)"
@@ -31,18 +29,22 @@ services:
   maildev:
     image: maildev/maildev:1.1.0
     ports:
-      - '1080:1080'
-      - '1025:1025'
+      - '1025:25'
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.maildev.rule=Host(`maildev.local`)"
+      - "traefik.http.services.maildev.loadbalancer.server.port=1080"
 
   node:
     build: ./docker/node
     tty: true
-
+    command: sh -c "yarn install && yarn start"
     volumes:
       - ./packages/vuejs:/var/www
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.node.rule=Host(`docker-project`)"
+      - "traefik.http.services.node.loadbalancer.server.port=8080"
 
   php-fpm:
     build: ./docker/php-fpm
@@ -55,19 +57,19 @@ services:
       - ./packages/symfony:/var/www
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.nginx.rule=Host(`api.symfony.local`)"
+      - "traefik.http.routers.nginx.rule=Host(`api.docker-project.local`)"
 
-#  traefik:
-#    image: traefik:v2.1
-#    command:
-#      - --api.insecure=true
-#      - --providers.docker
-#      - --providers.docker.exposedByDefault=false
-#    volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock
-#    ports:
-#      - "80:80"
-#      - '8080:8080'
+  traefik:
+    image: traefik:v2.1
+    command:
+      - --api.insecure=true
+      - --providers.docker
+      - --providers.docker.exposedByDefault=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80:80"
+      - '8080:8080'
 
 volumes:
   mysql_data:
