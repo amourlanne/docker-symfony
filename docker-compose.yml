@@ -38,12 +38,11 @@ services:
   node:
     build: ./docker/node
     tty: true
-    command: sh -c "yarn install && yarn start"
     volumes:
       - ./packages/vuejs:/var/www
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.node.rule=Host(`docker-project`)"
+      - "traefik.http.routers.node.rule=Host(`docker-project.local`)"
       - "traefik.http.services.node.loadbalancer.server.port=8080"
 
   php-fpm:
@@ -69,7 +68,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "80:80"
-      - '8080:8080'
 
 volumes:
   mysql_data:
